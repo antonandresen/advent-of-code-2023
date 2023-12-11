@@ -9,7 +9,7 @@ const part1 = () => {
   const startingTilePos = diagramMatrix.reduce((startTile, row, y) => {
     const x = row.findIndex(v => v === START)
     return x !== -1 ? { x, y } : startTile
-  })
+  }, { x: -1, y: -1})
 
   const DIRS = { NORTH: 'NORTH', EAST: 'EAST', SOUTH: 'SOUTH', WEST: 'WEST' }
   const PIPES = {
@@ -50,7 +50,7 @@ const part1 = () => {
   do {
     const adjacentPositions = getAdjacent(currentPos, possibleNextDirections)
     for(const adjPos of adjacentPositions) {
-      if(!diagramMatrix[adjPos.y]?.[adjPos.x]) return
+      if(!diagramMatrix[adjPos.y]?.[adjPos.x]) continue
 
       const pipeOnAdjPos = diagramMatrix[adjPos.y][adjPos.x]
       const isPreviousPos = previousPos.x === adjPos.x && previousPos.y === adjPos.y
@@ -82,7 +82,7 @@ const part2 = () => {
   const startingTilePos = diagramMatrix.reduce((startTile, row, y) => {
     const x = row.findIndex(v => v === START)
     return x !== -1 ? { x, y } : startTile
-  })
+  }, { x: -1, y: -1})
 
   const DIRS = { NORTH: 'NORTH', EAST: 'EAST', SOUTH: 'SOUTH', WEST: 'WEST' }
   const PIPES = {
@@ -120,11 +120,10 @@ const part2 = () => {
   let previousPos = { x: -1, y: -1}
   let currentPos = startingTilePos
   let possibleNextDirections = [...Object.values(DIRS)]
-  let stepsTaken = 0
   do {
     const adjacentPositions = getAdjacent(currentPos, possibleNextDirections)
     for(const adjPos of adjacentPositions) {
-      if(!diagramMatrix[adjPos.y]?.[adjPos.x]) return
+      if(!diagramMatrix[adjPos.y]?.[adjPos.x]) continue
 
       const pipeOnAdjPos = diagramMatrix[adjPos.y][adjPos.x]
       const isPreviousPos = previousPos.x === adjPos.x && previousPos.y === adjPos.y
@@ -137,15 +136,28 @@ const part2 = () => {
         break
       }
     }
-
-    ++stepsTaken
   } while(diagramMatrix[currentPos.y][currentPos.x] !== START)
 
-  const lengthToPointFarthestFromStart = Math.ceil(stepsTaken / 2)
-  console.log(fullPath)
+  diagramMatrix[startingTilePos.y][startingTilePos.x] = PIPES.SE_BEND
+  let numOfTilesEnclosedByLoop = 0
+  tilesEnclosed = []
+  for(const [rowIndex, row] of diagramMatrix.entries()) {
+    let withinLoop = false
+    for(const [pipeIndex, pipe] of row.entries()) {
+      const currentPoint = { y: rowIndex, x: pipeIndex }
+      const pipeIsPartOfLoop = fullPath.find(point => point.x === currentPoint.x && point.y === currentPoint.y)
+      const isSouthPointingPipe = [PIPES.VERTICAL_PIPE, PIPES.SE_BEND, PIPES.SW_BEND].includes(pipe)
+
+      if(pipeIsPartOfLoop && isSouthPointingPipe) withinLoop = !withinLoop
+      else if(withinLoop && !pipeIsPartOfLoop) {
+        tilesEnclosed.push({ x: pipeIndex, y: rowIndex})
+        numOfTilesEnclosedByLoop++
+      }
+    }
+  }
 
   console.log(
-    `[Part2] - Length to point farthest from start is: ${lengthToPointFarthestFromStart}`
+    `[Part2] - Number of tiles enclosed by the loop is: ${numOfTilesEnclosedByLoop}`
   )
 };
 
@@ -164,5 +176,40 @@ part2();
 ...........
  */
 
-// 4, 4 = false
-// 6, 2 = false
+/*
+..........
+.S------7.
+.|F----7|.
+.||....||.
+.||....||.
+.|L-7F-J|.
+.|..||..|.
+.L--JL--J.
+..........
+*/
+
+/*
+.F----7F7F7F7F-7....
+.|F--7||||||||FJ....
+.||.FJ||||||||L7....
+FJL7L7LJLJ||LJ.L-7..
+L--J.L7...LJS7F-7L7.
+....F-J..F7FJ|L7L7L7
+....L7.F7||L7|.L7L7|
+.....|FJLJ|FJ|F7|.LJ
+....FJL-7.||.||||...
+....L---J.LJ.LJLJ...
+*/
+
+/*
+FF7FSF7F7F7F7F7F---7
+L|LJ||||||||||||F--J
+FL-7LJLJ||||||LJL-77
+F--JF--7||LJLJ7F7FJ-
+L---JF-JLJ.||-FJLJJ7
+|F|F-JF---7F7-L7L|7|
+|FFJF7L7F-JF7|JL---7
+7-L-JL7||F7|L7F-7F7|
+L.L7LFJ|||||FJL7||LJ
+L7JLJL-JLJLJL--JLJ.L
+*/
